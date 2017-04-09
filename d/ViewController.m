@@ -114,46 +114,159 @@
 
 
 #pragma mark === 互斥锁(线程同步)
-- (void)sell
-{
-    while (1)
-    {
-        @synchronized (self) {
-            
-            NSUInteger i = _count;
-            
-            if (i > 0)
-            {
-                _count = i - 1;
-                
-                NSLog(@"-- %zd -- %@", _count, [NSThread currentThread].name);
-            }
-            else
-            {
-                NSLog(@"完了");
-                break;
-            }
-        }
-    }
-}
-- (IBAction)test:(id)sender
-{
-    _thread = [[PXThread alloc] initWithTarget:self selector:@selector(sell) object:@"one"];
-    _thread1 = [[PXThread alloc] initWithTarget:self selector:@selector(sell) object:@"one"];
-    _thread2 = [[PXThread alloc] initWithTarget:self selector:@selector(sell) object:@"one"];
-    _thread.name = @"one";
-    _thread1.name = @"two";
-    _thread2.name = @"three";
-
-    [_thread start];
-    [_thread1 start];
-    [_thread2 start];
-}
+//- (void)sell
+//{
+//    while (1)
+//    {
+//        @synchronized (self) {
+//            
+//            NSUInteger i = _count;
+//            
+//            if (i > 0)
+//            {
+//                _count = i - 1;
+//                
+//                NSLog(@"-- %zd -- %@", _count, [NSThread currentThread].name);
+//            }
+//            else
+//            {
+//                NSLog(@"完了");
+//                break;
+//            }
+//        }
+//    }
+//}
+//- (IBAction)test:(id)sender
+//{
+//    _thread = [[PXThread alloc] initWithTarget:self selector:@selector(sell) object:@"one"];
+//    _thread1 = [[PXThread alloc] initWithTarget:self selector:@selector(sell) object:@"one"];
+//    _thread2 = [[PXThread alloc] initWithTarget:self selector:@selector(sell) object:@"one"];
+//    _thread.name = @"one";
+//    _thread1.name = @"two";
+//    _thread2.name = @"three";
+//
+//    [_thread start];
+//    [_thread1 start];
+//    [_thread2 start];
+//}
 
 
 #pragma mark === GCD  充分利用CPU的多核
+// 异步任务  并发队列
+//- (IBAction)test:(id)sender
+//{
+////    dispatch_queue_t queue = dispatch_queue_create("lala", DISPATCH_QUEUE_CONCURRENT);
+//    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+//    
+//    // 异步
+//    dispatch_async(queue, ^{
+//        
+//        for (NSUInteger i = 0; i < 10; i++)
+//        {
+//            NSLog(@"1---%@", [NSThread currentThread]);
+//        }
+//    });
+//    
+//    dispatch_async(queue, ^{
+//        
+//        for (NSUInteger i = 0; i < 10; i++)
+//        {
+//            NSLog(@"2---%@", [NSThread currentThread]);
+//        }
+//    });
+//    
+//    dispatch_async(queue, ^{
+//        
+//        for (NSUInteger i = 0; i < 10; i++)
+//        {
+//            NSLog(@"3---%@", [NSThread currentThread]);
+//        }
+//    });
+//    
+//    dispatch_async(queue, ^{
+//        
+//        for (NSUInteger i = 0; i < 10; i++)
+//        {
+//            NSLog(@"4---%@", [NSThread currentThread]);
+//        }
+//    });
+//    
+//    // 同步
+////    dispatch_sync(<#dispatch_queue_t  _Nonnull queue#>, <#^(void)block#>)
+//}
+// 异步任务  串行队列
+//- (IBAction)test:(id)sender
+//{
+////    dispatch_queue_t queue = dispatch_queue_create("lala.com", DISPATCH_QUEUE_SERIAL);
+//    dispatch_queue_t queue = dispatch_queue_create("lala.com", NULL);
+//    
+//    dispatch_async(queue, ^{
+//        
+//        for (NSUInteger i = 0; i < 10; i++)
+//        {
+//            NSLog(@"0---%@", [NSThread currentThread]);
+//        }
+//    });
+//    
+//    dispatch_async(queue, ^{
+//        
+//        for (NSUInteger i = 0; i < 10; i++)
+//        {
+//            NSLog(@"1---%@", [NSThread currentThread]);
+//        }
+//    });
+//}
 
+// 线程间的通讯
+- (IBAction)test:(id)sender
+{
+//    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+//        
+//        // 回到主线程
+//        dispatch_async(dispatch_get_main_queue(), ^{
+//            
+//            
+//        });
+//    });
 
+    dispatch_queue_t queue = dispatch_queue_create("123", DISPATCH_QUEUE_CONCURRENT);
+    
+    // 栅栏，先执行前面的任务，再执行后面的任务
+    // 注意：全局的并发队列不好使
+    dispatch_barrier_async(queue, ^{
+    });
+    
+    // 延时执行1
+    [self performSelector:@selector(run) withObject:nil afterDelay:2.0];
+    // 延时执行2
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        
+    });
+    // 延时执行3
+    [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(run) userInfo:nil repeats:NO];
+
+    // 一次性代码(线程安全)
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        
+    });
+    
+    // 快速迭代
+    dispatch_apply(10, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(size_t index) {
+        
+        NSLog(@"%zd", index);
+    });
+    
+    // 调度组  下载两张图片，然后两张图片合成一张图片
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_queue_t queue1 = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    dispatch_group_async(group, queue1, ^{
+        
+    });
+    dispatch_group_notify(group, queue1, ^{
+        
+    });
+}
 
 
 @end
